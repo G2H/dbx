@@ -1,0 +1,5 @@
+# built binary
+/dbx
+
+# generated sample databases for manual poking (see README)
+/testdata/
