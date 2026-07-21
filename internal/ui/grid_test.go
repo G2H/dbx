@@ -114,6 +114,59 @@ func TestGridHorizontalScroll(t *testing.T) {
 	}
 }
 
+func TestGridOverflowChevrons(t *testing.T) {
+	cols := []string{"aaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbb", "cccccccccccccccccccc", "dddddddddddddddddddd"}
+	rows := make([][]GCell, 20)
+	for i := range rows {
+		row := make([]GCell, len(cols))
+		for j := range row {
+			row[j] = GCell{Text: "x"}
+		}
+		rows[i] = row
+	}
+	g := NewGrid(cols, rows)
+	g.Cursor = 0
+	g.ColCursor = 0
+
+	// At the left edge with hidden columns right and rows below.
+	lines := g.Render(50, 8, true)
+	top, bottom := plain(lines[0]), plain(lines[len(lines)-1])
+	if !strings.Contains(top, "›") {
+		t.Fatalf("hidden right columns need ›: %q", top)
+	}
+	if strings.Contains(top, "‹") {
+		t.Fatalf("nothing hidden left yet: %q", top)
+	}
+	if !strings.Contains(bottom, "▾") {
+		t.Fatalf("rows below the viewport need ▾: %q", bottom)
+	}
+
+	// Scrolled fully right and to the last row: chevrons flip off.
+	g.MoveCol(3)
+	g.Move(19)
+	lines = g.Render(50, 8, true)
+	top, bottom = plain(lines[0]), plain(lines[len(lines)-1])
+	if !strings.Contains(top, "‹") {
+		t.Fatalf("hidden left columns need ‹: %q", top)
+	}
+	if strings.Contains(top, "›") {
+		t.Fatalf("last column visible, no ›: %q", top)
+	}
+	if strings.Contains(bottom, "▾") {
+		t.Fatalf("cursor at last row, no ▾: %q", bottom)
+	}
+
+	// A grid that fits entirely shows no chevrons at all.
+	small := NewGrid([]string{"id"}, [][]GCell{{{Text: "1"}}})
+	lines = small.Render(30, 5, false)
+	joined := plain(strings.Join(lines, "\n"))
+	for _, glyph := range []string{"‹", "›", "▾"} {
+		if strings.Contains(joined, glyph) {
+			t.Fatalf("fully visible grid must not show %s:\n%s", glyph, joined)
+		}
+	}
+}
+
 func TestGridVerticalScrollFollowsCursor(t *testing.T) {
 	rows := make([][]GCell, 50)
 	for i := range rows {

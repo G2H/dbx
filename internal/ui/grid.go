@@ -187,8 +187,14 @@ func (g *Grid) Render(w, h int, focused bool) []string {
 	}
 	g.rowOff = clamp(g.rowOff, 0, max(0, len(g.Rows)-bodyH))
 
+	// Overflow indicators: columns hidden left/right of the viewport, rows
+	// below it.
+	moreLeft := g.colOff > 0
+	moreRight := len(idx) > 0 && idx[len(idx)-1] < len(g.Cols)-1
+	moreDown := len(g.Rows) > g.rowOff+bodyH
+
 	lines := make([]string, 0, h)
-	lines = append(lines, g.headerBorder(w, idx, widths, focused))
+	lines = append(lines, g.headerBorder(w, idx, widths, focused, moreLeft, moreRight))
 	side := S.Dim.Render("│")
 	for i := 0; i < bodyH; i++ {
 		ri := g.rowOff + i
@@ -198,7 +204,11 @@ func (g *Grid) Render(w, h int, focused bool) []string {
 		}
 		lines = append(lines, side+" "+padANSI(content, w-4)+" "+side)
 	}
-	lines = append(lines, S.Dim.Render("└"+strings.Repeat("─", w-2)+"┘"))
+	bottom := []rune("└" + strings.Repeat("─", w-2) + "┘")
+	if moreDown {
+		bottom[len(bottom)-2] = '▾'
+	}
+	lines = append(lines, S.Dim.Render(string(bottom)))
 	return lines
 }
 
@@ -207,7 +217,7 @@ func (g *Grid) Render(w, h int, focused bool) []string {
 // word. Content offset j lands at absolute column j+2 (body rows are
 // prefixed by "│ "), so a cell starting at content offset co places its
 // header at canvas index co+2.
-func (g *Grid) headerBorder(w int, idx, widths []int, focused bool) string {
+func (g *Grid) headerBorder(w int, idx, widths []int, focused, moreLeft, moreRight bool) string {
 	canvas := make([]rune, w)
 	for i := range canvas {
 		canvas[i] = '─'
@@ -240,6 +250,14 @@ func (g *Grid) headerBorder(w int, idx, widths []int, focused bool) string {
 			accentFrom, accentTo = co+2, at
 		}
 		co += widths[n] + 2
+	}
+
+	// Overflow chevrons win over anything a header word left there.
+	if moreLeft {
+		canvas[1] = '‹'
+	}
+	if moreRight {
+		canvas[w-2] = '›'
 	}
 
 	join := func(runes []rune) string {
