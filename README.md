@@ -3,6 +3,23 @@
 A single-binary terminal UI for exploring SQLite, DuckDB, Parquet, CSV/TSV
 and JSON files, plus directories and globs of them.
 
+![Tables view: table list, schema with common values, and a row preview](docs/screenshots/tables.png)
+
+## Install
+
+On macOS (Apple silicon or Intel):
+
+```
+curl -fsSL https://raw.githubusercontent.com/G2H/dbx/main/install.sh | sh
+```
+
+The script downloads the latest release for your architecture, verifies its
+SHA-256 checksum and installs the binary to `~/.local/bin/dbx`. Set
+`DBX_INSTALL_DIR` to install elsewhere, or `DBX_VERSION=v0.1.0` to pin a
+release. Other platforms: build from source (see [Build](#build)).
+
+## Usage
+
 ```
 dbx path/to/data.db
 dbx path/to/warehouse.duckdb
@@ -45,10 +62,14 @@ every table as `schema.name`.
   `F` lists active filters (`Enter` edits, `x` removes one), `ctrl+r`
   clears all after confirming. `o` sorts rows by the highlighted column
   (press again for descending, a third time to clear).
+
+  ![Details view with the value picker filtering status to shipped and pending](docs/screenshots/details.png)
 - **SQL**: a multi-line editor on top, results below. `alt+enter`, `F5`,
   or `ctrl+r` executes. Errors show inline; the connection is read-only,
   so writes fail with the engine's own error. `ctrl+p` / `ctrl+n` walk
   the in-session history.
+
+  ![SQL view: a join with grouped results](docs/screenshots/sql.png)
 
 `s` flips to the SQL editor from any table screen; `t` flips back to
 wherever you were (leave the editor with `esc` first). Everywhere: `tab`
@@ -81,7 +102,15 @@ runtime shared-library dependency beyond the system libc. The SQLite driver
 **Cross-compiling caveat:** because of cgo, cross-compiling needs a C
 toolchain that targets the destination platform (for example
 `CC="zig cc -target x86_64-linux-gnu" GOOS=linux GOARCH=amd64 go build ./cmd/dbx`).
-The Makefile only builds for the host platform on purpose.
+`make build` targets the host platform only. The exception is `make release`,
+which builds both macOS architectures from a Mac (Apple's clang targets either
+one) into `dist/`:
+
+```
+git tag v0.1.0 && git push --tags
+make release VERSION=0.1.0
+gh release create v0.1.0 dist/*
+```
 
 ## Testing
 
@@ -89,7 +118,9 @@ The Makefile only builds for the host platform on purpose.
 filter-to-WHERE builder, limited row scanning, grid rendering) and
 integration tests that create throwaway SQLite and DuckDB databases and
 exercise both engines, plus a headless UI test that drives the bubbletea
-model through the main flows.
+model through the main flows. It also runs `scripts/install_test.sh`,
+which exercises `install.sh` against a fake local release (happy path,
+checksum mismatch, missing asset).
 
 `testdata/` holds locally generated sample databases for manual poking;
 it is not checked in.

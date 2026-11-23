@@ -3,3 +3,4 @@
 
 # generated sample databases for manual poking (see README)
 /testdata/
+dist/

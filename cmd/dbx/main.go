@@ -13,7 +13,8 @@ import (
 	"dbx/internal/ui"
 )
 
-const version = "0.1.0-dev"
+// version is overridden at release time via -ldflags "-X main.version=...".
+var version = "0.1.0-dev"
 
 var (
 	brand   = lipgloss.NewStyle().Foreground(lipgloss.Color("#86D5FD")).Bold(true)
